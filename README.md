@@ -44,7 +44,7 @@ docker run -e TARGET_URL="https://example.com" -e SCREEN_WIDTH=1920 -e SCREEN_HE
 Once the container is running, you can connect to the VNC server using a VNC client:
 
 1. Use a VNC viewer (e.g., [TigerVNC](https://tigervnc.org/))
-2. Connect to `localhost:5900`
+2. Connect to `localhost:5900` or `IPaddress:5900`
 3. If you set a password, provide it when prompted
 
 ## Modifying the Python Script
