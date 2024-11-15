@@ -47,6 +47,9 @@ Once the container is running, you can connect to the VNC server using a VNC cli
 2. Connect to `localhost:5900` or `IPaddress:5900`
 3. If you set a password, provide it when prompted
 
+> ⚠️ **Warning**: By default, no password is set for the VNC server. If you expose the VNC server to the internet, it is highly recommended to set a secure password using the `VNC_PASSWORD` environment variable.
+
+
 ## Modifying the Python Script
 
 The main Python script (`pyServer.py`) handles the setup for:
