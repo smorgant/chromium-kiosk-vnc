@@ -6,7 +6,7 @@ from playwright.sync_api import sync_playwright
 # Configuration
 XVFB_DISPLAY = ":99"
 VNC_PORT = 5900
-VNC_PASSWORD = "vncpassword"  # Optional, set if desired
+VNC_PASSWORD = os.environ.get("VNC_PASSWORD", None)  # Fetch password from environment
 URL = os.environ.get("TARGET_URL", "https://example.com")  # Accept URL from environment variable
 default_width = int(os.environ.get("SCREEN_WIDTH", 1920))  # Accept width from environment variable
 default_height = int(os.environ.get("SCREEN_HEIGHT", 1080))  # Accept height from environment variable
