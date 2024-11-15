@@ -66,6 +66,13 @@ If you need to make modifications, update the `pyServer.py` file and rebuild the
 - **Connection Refused**: Make sure the VNC server is exposed on the correct port (`5900`) and your firewall allows incoming connections.
 - **Resolution Issues**: Ensure the `SCREEN_WIDTH` and `SCREEN_HEIGHT` match your VNC client settings.
 
+## Limitations
+
+- **Google API Warnings**: Some functionalities in Chromium may produce warnings related to missing or invalid Google API keys. Dummy environment variables are set to suppress these warnings, but they do not enable any Google services.
+- **No GPU Acceleration**: The setup disables GPU acceleration (`--disable-gpu`), which may result in lower performance for GPU-intensive applications.
+- **VNC Responsiveness**: Depending on the resolution and network conditions, the VNC server may not deliver real-time responsiveness for high-resolution streams.
+- **Limited Browser Features**: Certain Chromium features like notifications, WebRTC, and other hardware-accelerated components may not function properly in a headless or virtualized environment.
+
 ## Example Dockerfile
 
 Below is the `Dockerfile` used to build this project:
