@@ -1,14 +1,6 @@
 # Use an official Python image as the base
 FROM python:3.10-slim
 
-# Set environment variables for the script
-ENV DISPLAY=:99
-ENV VNC_PORT=5900
-ENV API_PORT=5901
-ENV SCREEN_WIDTH=1920
-ENV SCREEN_HEIGHT=1080
-ENV TARGET_URL=https://example.com
-
 # Install required packages
 RUN apt-get update && apt-get install -y \
     xvfb \
