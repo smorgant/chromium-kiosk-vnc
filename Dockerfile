@@ -4,6 +4,7 @@ FROM python:3.10-slim
 # Set environment variables for the script
 ENV DISPLAY=:99
 ENV VNC_PORT=5900
+ENV API_PORT=5901
 ENV SCREEN_WIDTH=1920
 ENV SCREEN_HEIGHT=1080
 ENV TARGET_URL=https://example.com
@@ -29,7 +30,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Playwright
-RUN pip install playwright
+RUN pip install playwright requests flask websockets asyncio
 
 # Install Chromium browser with Playwright
 RUN playwright install chromium
@@ -38,10 +39,15 @@ RUN playwright install chromium
 WORKDIR /app
 
 # Copy the Python script into the container
-COPY vnc_chromium.py .
+COPY chromium_api.py .
+COPY start.sh .
+COPY launch_chromium.sh .
+
+RUN chmod +x start.sh chromium_api.py launch_chromium.sh
 
 # Expose VNC port
 EXPOSE 5900
+EXPOSE 5901
 
-# Command to start the script
-CMD ["python3", "vnc_chromium.py"]
+# Set the entrypoint to the start script
+ENTRYPOINT ["./start.sh"]
