@@ -1,136 +1,129 @@
-# Chromium VNC Streaming with Playwright
+# Chromium-Controlled Docker Container
+This project provides a Docker container that runs a Chromium browser controlled via a Python-based API server. The container uses Playwright to download and set up Chromium, while leveraging the Chrome DevTools Protocol (CDP) via WebSocket to manage and control the browser through the API. Additionally, the container includes a VNC server for visual interaction with the browser.
 
-This project sets up a containerized environment to stream a Chromium browser session over VNC using a headless X server (Xvfb). It uses Playwright to manage Chromium installation and allows you to customize the URL and screen resolution.
+
+## Table of Contents
+- [Features](#features)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Running the Container](#running-the-container)
+- [API Documentation](#api-documentation)
+  - [/change_url](#change_url)
+  - [/reload_page](#reload_page)
+- [Security Considerations](#security-considerations)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
 
 ## Features
+- **Chromium Browser Control**: Uses Playwright to download Chromium and Chrome DevTools Protocol (CDP) to manage and control the browser via WebSocket.
+- **API Server**: Flask-based server with endpoints to control the browser via CDP, such as changing URLs and reloading pages.
+- **VNC Server**: Includes an X11 virtual framebuffer (Xvfb) and VNC server for visualizing and remotely accessing the Chromium browser.
 
-- Streams Chromium browser via VNC
-- Kiosk mode for full-screen browser experience
-- Configurable URL and screen resolution
-- Built with Python and Docker
+## Project Structure
+- `Dockerfile`: Instructions for building the Docker image, including installation of dependencies.
+- `chromium_api.py`: Flask API server used to control Chromium.
+- `launch_chromium.sh`: Shell script that starts Xvfb, VNC server, and Chromium.
+- `start.sh`: Script to run both `launch_chromium.sh` and `chromium_api.py`.
 
-## Prerequisites
+## Getting Started
 
-- Docker installed on your system
+### Prerequisites
+- Docker must be installed and running on your machine.
+- No additional software is required, as everything else runs inside the container.
 
-## Building the Docker Image
+### Installation
+Clone the repository to your local machine:
 
-Use the provided `Dockerfile` to build the image:
-
-```bash
-# Build the Docker image
-docker build -t chromium-vnc .
+```
+git clone <repository_url>
+cd <repository_name>
 ```
 
-## Running the Container
+### Running the Container
+To build the Docker image and run the container, use the following commands:
 
-To run the container, pass the desired URL and screen resolution as environment variables:
-
-```bash
-# Run the container
-docker run -e TARGET_URL="https://example.com" -e SCREEN_WIDTH=1920 -e SCREEN_HEIGHT=1080 -p 5900:5900 chromium-vnc
+```
+docker build -t chromium-controller .
+docker run -p 5900:5900 -p 5901:5901 --rm chromium-controller
 ```
 
-### Environment Variables
+- **Port 5900**: Used for VNC access.
+- **Port 5901**: Used for the Flask API server.
 
-- `TARGET_URL`: The URL to load in Chromium (default: `https://example.com`)
-- `SCREEN_WIDTH`: The width of the virtual display (default: `1920`)
-- `SCREEN_HEIGHT`: The height of the virtual display (default: `1080`)
-- `VNC_PORT`: The port for the VNC server (default: `5900`)
-- `VNC_PASSWORD`: The password for the VNC server (optional)
+### Required and Optional Parameters for Running the Container
 
-## Accessing the VNC Server
+- **Required Parameter**:
+  - `TARGET_URL`: The URL that Chromium should navigate to. This must be passed when starting the container.
 
-Once the container is running, you can connect to the VNC server using a VNC client:
+- **Non-Mandatory Parameters**:
+  - `VNC_PORT`: Port for the VNC server. Defaults to `5900` if not specified.
+  - `SCREEN_WIDTH`: Width of the virtual screen. Defaults to `1920` if not specified.
+  - `SCREEN_HEIGHT`: Height of the virtual screen. Defaults to `1080` if not specified.
+  - `VNC_PASSWORD`: Password for VNC access. By default, no password is set, but it is recommended for security purposes.
 
-1. Use a VNC viewer (e.g., [TigerVNC](https://tigervnc.org/))
-2. Connect to `localhost:5900` or `IPaddress:5900`
-3. If you set a password, provide it when prompted
+## API Documentation
 
-> ⚠️ **Warning**: By default, no password is set for the VNC server. If you expose the VNC server to the internet, it is highly recommended to set a secure password using the `VNC_PASSWORD` environment variable.
+### /change_url
+**Endpoint**: `/change_url`  
+**Method**: `POST`  
+**Description**: Changes the current URL in the Chromium browser.
 
+**Request Headers**:
+- `Content-Type`: Must be set to `application/json`
 
-## Modifying the Python Script
+**Request Body** (JSON):
 
-The main Python script (`pyServer.py`) handles the setup for:
+```
+{
+  "url": "<new_url>"
+}
+```
 
-- Starting the X virtual framebuffer (Xvfb)
-- Starting the VNC server (x11vnc)
-- Launching Chromium in kiosk mode
+**Response**:
+- Success: Returns a status `200 OK` with a message indicating that the URL has been changed.
+- Failure: Returns a status `400` if no URL is provided, or `500` if there is an error communicating with Chromium.
 
-If you need to make modifications, update the `pyServer.py` file and rebuild the Docker image.
+### /reload_page
+**Endpoint**: `/reload_page`  
+**Method**: `POST`  
+**Description**: Reloads the current page in the Chromium browser.
+
+**Response**:
+- Success: Returns a status `200 OK` with a message indicating that the page was reloaded.
+- Failure: Returns a status `404` if no open tabs are found, or `500` if there is an error communicating with Chromium.
+
+## Security Considerations
+
+- **Environment Variables**: Avoid hardcoding sensitive values (e.g., API keys, credentials) in the Dockerfile or scripts. Instead, pass sensitive values through environment variables using `docker run -e` options.
+- **VNC Password**: By default, the VNC server runs without a password, which is insecure in a public environment. Consider setting a VNC password by modifying the `launch_chromium.sh` script.
+- **API Endpoint Security**: The `/change_url` and `/reload_page` endpoints do not have authentication mechanisms. It is recommended to add basic authentication or an API key to secure these endpoints if exposed publicly.
+- **Logging Level**: The `chromium_api.py` script is configured to log at the debug level, which may expose sensitive information. Ensure to lower the verbosity level, particularly in production environments.
+- **Flask Server**: The Flask server included is intended for development purposes. For production, you should use a WSGI server like `gunicorn` to increase security and reliability.
+- **Non-Production Server Usage**: Replace Flask's default server with `gunicorn` or another production-ready server for shared or deployed versions.
 
 ## Troubleshooting
 
-- **Chromium Errors**: Ensure all required libraries are installed in the Docker image. The `Dockerfile` includes dependencies for running Chromium.
-- **Connection Refused**: Make sure the VNC server is exposed on the correct port (`5900`) and your firewall allows incoming connections.
-- **Resolution Issues**: Ensure the `SCREEN_WIDTH` and `SCREEN_HEIGHT` match your VNC client settings.
+1. **X11VNC Password Warning**:
+   - You can use the `-nopw` flag to disable this warning or configure a password using `x11vnc -storepasswd`.
 
-## Limitations
+2. **415 Unsupported Media Type Error**:
+   - Ensure that the `Content-Type` header in your request is set to `application/json`. This is necessary for the server to correctly interpret the request body as JSON.
 
-- **Google API Warnings**: Some functionalities in Chromium may produce warnings related to missing or invalid Google API keys. Dummy environment variables are set to suppress these warnings, but they do not enable any Google services.
-- **No GPU Acceleration**: The setup disables GPU acceleration (`--disable-gpu`), which may result in lower performance for GPU-intensive applications.
-- **VNC Responsiveness**: Depending on the resolution and network conditions, the VNC server may not deliver real-time responsiveness for high-resolution streams.
-- **Limited Browser Features**: Certain Chromium features like notifications, WebRTC, and other hardware-accelerated components may not function properly in a headless or virtualized environment.
+3. **Chromium DBus Errors**:
+   - You may see errors related to DBus (`Failed to connect to the bus`). These can generally be ignored if the browser still functions properly. Alternatively, add the `--disable-features=AudioServiceOutOfProcess` flag to the Chromium launch options.
 
-## Example Dockerfile
+4. **GPU Initialization Issues**:
+   - To resolve GPU-related errors (`vkCreateInstance failed`), make sure to launch Chromium with `--disable-gpu` and `--disable-software-rasterizer`.
 
-Below is the `Dockerfile` used to build this project:
+## Next Steps: Moving from Playwright to Another Chromium Implementation
 
-```bash
-# Use an official Python image as the base
-FROM python:3.10-slim
+If your use case requires more flexibility or if Playwright is not suitable for your specific needs, you may consider switching to another Chromium automation tool. Some popular alternatives include:
 
-# Set environment variables for the script
-ENV DISPLAY=:99
-ENV VNC_PORT=5900
-ENV SCREEN_WIDTH=1920
-ENV SCREEN_HEIGHT=1080
-ENV TARGET_URL=https://example.com
+- **Thorium Browser**: Thorium is an open-source Chromium-based browser with added enhancements for privacy and efficiency. It can serve as a replacement if you need better control or features outside of standard Chromium.
 
-# Install required packages
-RUN apt-get update && apt-get install -y \\
-    xvfb \\
-    x11vnc \\
-    curl \\
-    wget \\
-    unzip \\
-    libnss3 \\
-    libatk1.0-0 \\
-    libatk-bridge2.0-0 \\
-    libcups2 \\
-    libxcomposite1 \\
-    libxrandr2 \\
-    libgbm1 \\
-    libasound2 \\
-    libpangocairo-1.0-0 \\
-    libgtk-3-0 \\
-    && apt-get clean \\
-    && rm -rf /var/lib/apt/lists/*
+Each of these tools has different strengths, and your choice will depend on your project's needs, such as language compatibility, ease of use, and community support.
 
-# Install Playwright
-RUN pip install playwright
-
-# Install Chromium browser with Playwright
-RUN playwright install chromium
-
-# Set working directory
-WORKDIR /app
-
-# Copy the Python script into the container
-COPY pyServer.py .
-
-# Expose VNC port
-EXPOSE 5900
-
-# Command to start the script
-CMD ["python3", "pyServer.py"]
-```
-
-## Credits
-
-This project uses:
-
-- [Playwright](https://playwright.dev/) for managing Chromium
-- [x11vnc](https://github.com/LibVNC/x11vnc) for VNC server
-- [Xvfb](https://www.x.org/releases/X11R7.6/doc/man/man1/Xvfb.1.xhtml) for virtual framebuffer
+## License
+This project is licensed under the MIT License. See the LICENSE file for more information.
