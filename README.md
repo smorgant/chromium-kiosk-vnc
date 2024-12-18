@@ -46,7 +46,7 @@ To build the Docker image and run the container, use the following commands:
 
 ```
 docker build -t chromium-controller .
-docker run -p 5900:5900 -p 5901:5901 --rm chromium-controller
+docker run -p 5900:5900 -p 5901:5901 -e TARGET_URL=https://www.example.com chromium-controller
 ```
 
 - **Port 5900**: Used for VNC access.
