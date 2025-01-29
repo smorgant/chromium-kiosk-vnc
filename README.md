@@ -12,6 +12,7 @@ This project provides a Docker container that runs a Chromium browser controlled
 - [API Documentation](#api-documentation)
   - [/change_url](#change_url)
   - [/reload_page](#reload_page)
+  - [/clear_cache](#clear_cache)
 - [Security Considerations](#security-considerations)
 - [Troubleshooting](#troubleshooting)
 - [License](#license)
@@ -91,7 +92,17 @@ docker run -p 5900:5900 -p 5901:5901 -e TARGET_URL=https://www.example.com chrom
 **Description**: Reloads the current page in the Chromium browser.
 
 **Response**:
-- Success: Returns a status `200 OK` with a message indicating that the page was reloaded.
+- Success: Returns a status `200 OK` with a message "Page reloaded successfully" indicating that the page was reloaded.
+- Failure: Returns a status `404` if no open tabs are found, or `500` if there is an error communicating with Chromium.
+
+
+### /clear_cache
+**Endpoint**: `/reload_page`  
+**Method**: `POST`  
+**Description**: Clear the browser cache
+
+**Response**:
+- Success: Returns a status `200 OK` with a message "Browser cache and cookies cleared successfully" indicating that the page was reloaded.
 - Failure: Returns a status `404` if no open tabs are found, or `500` if there is an error communicating with Chromium.
 
 ## Security Considerations
