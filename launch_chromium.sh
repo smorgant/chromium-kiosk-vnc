@@ -17,6 +17,17 @@ XVFB_PID=$!
 export DISPLAY=$XVFB_DISPLAY
 echo "Xvfb started on display $XVFB_DISPLAY."
 
+# Wait until Xvfb is fully ready
+echo "Waiting for Xvfb to initialize..."
+for i in {1..10}; do
+    if xdpyinfo -display $XVFB_DISPLAY >/dev/null 2>&1; then
+        echo "Xvfb is ready!"
+        break
+    fi
+    echo "Xvfb not ready, retrying in 1 second..."
+    sleep 1
+done
+
 # Start VNC server (optional)
 echo "Starting VNC server..."
 if [ -n "$VNC_PASSWORD" ]; then
