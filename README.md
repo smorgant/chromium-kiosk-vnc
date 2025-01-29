@@ -97,12 +97,12 @@ docker run -p 5900:5900 -p 5901:5901 -e TARGET_URL=https://www.example.com chrom
 
 
 ### /clear_cache
-**Endpoint**: `/reload_page`  
+**Endpoint**: `/clear_cache`  
 **Method**: `POST`  
-**Description**: Clear the browser cache
+**Description**: Clear the browser cache and cookies
 
 **Response**:
-- Success: Returns a status `200 OK` with a message "Browser cache and cookies cleared successfully" indicating that the page was reloaded.
+- Success: Returns a status `200 OK` with a message "Browser cache and cookies cleared successfully" indicating that the cache and cookies are cleared.
 - Failure: Returns a status `404` if no open tabs are found, or `500` if there is an error communicating with Chromium.
 
 ## Security Considerations
