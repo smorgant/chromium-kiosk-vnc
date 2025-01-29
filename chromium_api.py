@@ -76,6 +76,8 @@ def change_url():
 
 @app.route('/reload_page', methods=['POST'])
 def reload_page():
+    """ Reloads the current page in the Chromium browser without requiring a request body. """
+
     # Fetch the list of open pages (tabs) from Chromium
     try:
         response = requests.get(CHROMIUM_DEBUGGING_URL)
@@ -87,7 +89,7 @@ def reload_page():
         return jsonify({"error": "Could not connect to Chromium.", "details": str(e)}), 500
 
     # Use the first available tab
-    if len(tabs) == 0:
+    if not tabs:
         logging.error("No open tabs found in Chromium.")
         return jsonify({"error": "No open tabs found."}), 404
 
@@ -106,6 +108,43 @@ def reload_page():
 
     logging.info("Page successfully reloaded")
     return jsonify({"message": "Page reloaded successfully"}), 200
+
+@app.route('/clear_cache', methods=['POST'])
+def clear_cache():
+    """ Clears the browser cache and cookies using Chrome DevTools Protocol (CDP). """
+
+    # Fetch the list of open pages (tabs) from Chromium
+    try:
+        response = requests.get(CHROMIUM_DEBUGGING_URL)
+        response.raise_for_status()
+        tabs = response.json()
+        logging.debug(f"Retrieved tabs: {tabs}")
+    except requests.RequestException as e:
+        logging.error(f"Could not connect to Chromium: {e}")
+        return jsonify({"error": "Could not connect to Chromium.", "details": str(e)}), 500
+
+    # Use the first available tab
+    if not tabs:
+        logging.error("No open tabs found in Chromium.")
+        return jsonify({"error": "No open tabs found."}), 404
+
+    tab = tabs[0]
+    websocket_url = tab.get('webSocketDebuggerUrl')
+    
+    if not websocket_url:
+        logging.error("No WebSocket debugger URL found for the tab.")
+        return jsonify({"error": "No WebSocket debugger URL found."}), 500
+
+    # Send commands to clear cache and cookies
+    try:
+        asyncio.run(send_cdp_command(websocket_url, 3, "Network.clearBrowserCache", {}))
+        asyncio.run(send_cdp_command(websocket_url, 4, "Network.clearBrowserCookies", {}))
+    except Exception as e:
+        logging.error(f"Failed to clear browser cache and cookies: {e}")
+        return jsonify({"error": "Failed to clear cache.", "details": str(e)}), 500
+
+    logging.info("Browser cache and cookies cleared successfully")
+    return jsonify({"message": "Browser cache and cookies cleared successfully"}), 200
 
 if __name__ == "__main__":
     logging.info("Starting Flask server for Chromium control API...")
