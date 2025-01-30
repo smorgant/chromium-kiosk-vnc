@@ -125,7 +125,7 @@ docker run -p 5900:5900 -p 5901:5901 -e TARGET_URL=https://www.example.com chrom
 ## Security Considerations
 
 - **Environment Variables**: Avoid hardcoding sensitive values (e.g., credentials) in the Dockerfile or scripts. Instead, pass sensitive values through environment variables using `docker run -e` options.
-- **VNC Password**: By default, the VNC server runs without a password, which is insecure in a public environment. Consider setting a VNC password by modifying the `launch_chromium.sh` script.
+- **VNC Password**: By default, the VNC server runs without a password, which is insecure in a public environment. Consider setting a VNC password by passing the VNC_PASSWORD environment variable.
 - **API Endpoint Security**: The `/change_url` and `/reload_page` endpoints do not have authentication mechanisms. It is recommended to add basic authentication or an API key to secure these endpoints if exposed publicly.
 - **Logging Level**: The `chromium_api.py` script is configured to log at the debug level, which may expose sensitive information. Ensure to lower the verbosity level, particularly in production environments.
 - **Flask Server**: The Flask server included is intended for development purposes. For production, you should use a WSGI server like `gunicorn` to increase security and reliability.
