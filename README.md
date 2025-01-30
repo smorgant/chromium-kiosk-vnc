@@ -3,6 +3,7 @@ This project provides a Docker container that runs a Chromium browser controlled
 
 
 ## Table of Contents
+- [Latest Features](#latest-features)
 - [Features](#features)
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
@@ -13,9 +14,14 @@ This project provides a Docker container that runs a Chromium browser controlled
   - [/change_url](#change_url)
   - [/reload_page](#reload_page)
   - [/clear_cache](#clear_cache)
+  - [/shutdown](#shutdown)
 - [Security Considerations](#security-considerations)
 - [Troubleshooting](#troubleshooting)
 - [License](#license)
+
+## Latest Additions
+- **Support for WebGL2**: Leverage mesa to support GPU acceleration via CPU acceleration- This can generate high cpu requirement VM will need to be sized appropriateley in this context
+- **Shutdown Endpoint**: Added a new endpoint to shutdown the docker container / shutdown
 
 ## Features
 - **Chromium Browser Control**: Uses Playwright to download Chromium and Chrome DevTools Protocol (CDP) to manage and control the browser via WebSocket.
@@ -105,9 +111,20 @@ docker run -p 5900:5900 -p 5901:5901 -e TARGET_URL=https://www.example.com chrom
 - Success: Returns a status `200 OK` with a message "Browser cache and cookies cleared successfully" indicating that the cache and cookies are cleared.
 - Failure: Returns a status `404` if no open tabs are found, or `500` if there is an error communicating with Chromium.
 
+
+### /shutdown
+**Endpoint**: `/shutdown`  
+**Method**: `POST`  
+**Description**: Shutdown the chromium instance and kill the container
+
+**Response**:
+- Success: Returns a status `200 OK` with a message "Chromium stopped successfully. The container will exit automatically." indicating that the chrome instance has been stopped and the container will follow.
+- Failure: Returns a status `500` if there is an error stopping the process.
+
+
 ## Security Considerations
 
-- **Environment Variables**: Avoid hardcoding sensitive values (e.g., API keys, credentials) in the Dockerfile or scripts. Instead, pass sensitive values through environment variables using `docker run -e` options.
+- **Environment Variables**: Avoid hardcoding sensitive values (e.g., credentials) in the Dockerfile or scripts. Instead, pass sensitive values through environment variables using `docker run -e` options.
 - **VNC Password**: By default, the VNC server runs without a password, which is insecure in a public environment. Consider setting a VNC password by modifying the `launch_chromium.sh` script.
 - **API Endpoint Security**: The `/change_url` and `/reload_page` endpoints do not have authentication mechanisms. It is recommended to add basic authentication or an API key to secure these endpoints if exposed publicly.
 - **Logging Level**: The `chromium_api.py` script is configured to log at the debug level, which may expose sensitive information. Ensure to lower the verbosity level, particularly in production environments.
@@ -116,17 +133,11 @@ docker run -p 5900:5900 -p 5901:5901 -e TARGET_URL=https://www.example.com chrom
 
 ## Troubleshooting
 
-1. **X11VNC Password Warning**:
-   - You can use the `-nopw` flag to disable this warning or configure a password using `x11vnc -storepasswd`.
-
-2. **415 Unsupported Media Type Error**:
+1. **415 Unsupported Media Type Error**:
    - Ensure that the `Content-Type` header in your request is set to `application/json`. This is necessary for the server to correctly interpret the request body as JSON.
 
-3. **Chromium DBus Errors**:
-   - You may see errors related to DBus (`Failed to connect to the bus`). These can generally be ignored if the browser still functions properly. Alternatively, add the `--disable-features=AudioServiceOutOfProcess` flag to the Chromium launch options.
-
-4. **GPU Initialization Issues**:
-   - To resolve GPU-related errors (`vkCreateInstance failed`), make sure to launch Chromium with `--disable-gpu` and `--disable-software-rasterizer`.
+2. **Chromium DBus Errors**:
+   - You may see errors related to DBus (`Failed to connect to the bus`). These can generally be ignored if the browser still functions properly.
 
 ## Next Steps: Moving from Playwright to Another Chromium Implementation
 
