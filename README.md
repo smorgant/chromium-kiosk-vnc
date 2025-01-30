@@ -3,7 +3,7 @@ This project provides a Docker container that runs a Chromium browser controlled
 
 
 ## Table of Contents
-- [Latest Features](#latest-features)
+- [Latest Additions](#latest-additions)
 - [Features](#features)
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
