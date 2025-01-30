@@ -9,10 +9,15 @@ TARGET_URL=${TARGET_URL:-"https://www.example.com"}
 VNC_PASSWORD=${VNC_PASSWORD:-""}
 CHROMIUM_PATH="/root/.cache/ms-playwright/chromium-*/chrome-linux/chrome"  # Path for Playwright-installed Chromium
 
+# Set environment variables to force software WebGL2 rendering
+export LIBGL_ALWAYS_SOFTWARE=1
+export MESA_GL_VERSION_OVERRIDE=4.5
+export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe
+
 # Start Xvfb
 resolution="${SCREEN_WIDTH}x${SCREEN_HEIGHT}x24"  # 24-bit color depth
 echo "Starting Xvfb with resolution $resolution..."
-Xvfb $XVFB_DISPLAY -screen 0 $resolution &
+Xvfb $XVFB_DISPLAY -screen 0 $resolution +extension GLX +render -noreset &
 XVFB_PID=$!
 export DISPLAY=$XVFB_DISPLAY
 echo "Xvfb started on display $XVFB_DISPLAY."
@@ -28,7 +33,7 @@ for i in {1..10}; do
     sleep 1
 done
 
-# Start VNC server (optional)
+# Start VNC server
 echo "Starting VNC server..."
 if [ -n "$VNC_PASSWORD" ]; then
     x11vnc -display $XVFB_DISPLAY -rfbport $VNC_PORT -forever -shared -geometry ${SCREEN_WIDTH}x${SCREEN_HEIGHT} -passwd $VNC_PASSWORD -nopw &
@@ -38,15 +43,26 @@ fi
 VNC_PID=$!
 echo "VNC server started on port $VNC_PORT with resolution ${SCREEN_WIDTH}x${SCREEN_HEIGHT}."
 
-# Start Chromium in kiosk mode
-echo "Launching Chromium in kiosk mode with URL: $TARGET_URL"
-$CHROMIUM_PATH --no-sandbox --test-type --disable-gpu --disable-software-rasterizer \
+# Start Chromium with WebGL2 in kiosk mode
+echo "Launching Chromium in kiosk mode with WebGL2: $TARGET_URL"
+$CHROMIUM_PATH --no-sandbox --test-type \
   --window-size=${SCREEN_WIDTH},${SCREEN_HEIGHT} --window-position=0,0 \
-  --disable-dbus --disable-features=AudioServiceOutOfProcess \
-  --no-message-box --disable-dev-shm-usage \
+  --disable-dev-shm-usage \
+  --use-gl=swiftshader \
+  --enable-unsafe-swiftshader \
+  --enable-gpu-rasterization \
+  --enable-oop-rasterization \
+  --enable-webgl \
+  --ignore-gpu-blocklist \
+  --enable-features=VaapiVideoDecoder,WebGLDraftExtensions,WebGL2ComputeContext \
+  --enable-unsafe-webgpu \
+  --enable-webgl2-compute-context \
+  --enable-zero-copy \
+  --no-message-box \
   --no-first-run --no-default-browser-check --remote-debugging-port=9222 \
   --kiosk "$TARGET_URL" &
 CHROMIUM_PID=$!
+
 
 # Wait for Chromium to exit
 wait $CHROMIUM_PID
@@ -56,6 +72,12 @@ echo "Stopping Xvfb..."
 kill $XVFB_PID
 
 echo "Stopping VNC server..."
-kill $VNC_PID
+if pgrep -x "x11vnc" > /dev/null; then
+     kill $VNC_PID
+fi
 
 echo "Cleanup complete."
+
+# Stop the Docker container
+echo "Chromium has exited. Stopping container..."
+exit 0
