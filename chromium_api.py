@@ -15,7 +15,7 @@ app = Flask(__name__)
 
 # Configuration
 CHROMIUM_DEBUGGING_URL = "http://localhost:9222/json"
-VNC_PORT = os.environ.get("VNC_PORT", 5900)
+VNC_PORT = int(os.environ.get("VNC_PORT", "5900"))
 API_PORT = VNC_PORT + 1
 
 async def send_cdp_command(websocket_url, command_id, method, params):
@@ -145,6 +145,21 @@ def clear_cache():
 
     logging.info("Browser cache and cookies cleared successfully")
     return jsonify({"message": "Browser cache and cookies cleared successfully"}), 200
+
+@app.route('/shutdown', methods=['POST'])
+def shutdown():
+    """ Terminates Chromium, which will cause the container to exit. """
+
+    logging.info("Received request to shutdown Chromium.")
+
+    # Find and terminate Chromium
+    try:
+        subprocess.run(["pkill", "-f", "chrome"], check=True)
+        logging.info("Chromium terminated successfully.")
+    except subprocess.CalledProcessError:
+        logging.warning("No Chromium process found to terminate.")
+
+    return jsonify({"message": "Chromium stopped successfully. The container will exit automatically."}), 200
 
 if __name__ == "__main__":
     logging.info("Starting Flask server for Chromium control API...")
