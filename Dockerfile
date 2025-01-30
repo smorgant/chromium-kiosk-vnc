@@ -18,6 +18,10 @@ RUN apt-get update && apt-get install -y \
     libasound2 \
     libpangocairo-1.0-0 \
     libgtk-3-0 \
+    mesa-utils \
+    libgl1-mesa-dri \
+    libgl1-mesa-glx \
+    xserver-xorg-video-dummy \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -40,6 +44,12 @@ RUN chmod +x start.sh chromium_api.py launch_chromium.sh
 # Expose VNC port
 EXPOSE 5900
 EXPOSE 5901
+
+# Set environment variables for software WebGL2
+ENV LIBGL_ALWAYS_SOFTWARE=1
+ENV MESA_GL_VERSION_OVERRIDE=4.5
+ENV MESA_LOADER_DRIVER_OVERRIDE=llvmpipe
+ENV DISPLAY=:99
 
 # Set the entrypoint to the start script
 ENTRYPOINT ["./start.sh"]
