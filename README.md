@@ -1,5 +1,5 @@
 # Chromium-Controlled Docker Container
-This project provides a Docker container that runs a Chromium browser controlled via a Python-based API server. The container uses Playwright to download and set up Chromium, while leveraging the Chrome DevTools Protocol (CDP) via WebSocket to manage and control the browser through the API. Additionally, the container includes a VNC server for visual interaction with the browser.
+This project provides a Docker container that runs a Chromium browser controlled via a Python-based API server. The container uses Playwright to download and set up Chromium, while leveraging the Chrome DevTools Protocol (CDP) via WebSocket to manage and control the browser through the API. Additionally, the container includes a VNC server for visual interaction with the browser and provides file download and retrieval capabilities.
 
 
 ## Table of Contents
@@ -15,6 +15,10 @@ This project provides a Docker container that runs a Chromium browser controlled
   - [/reload_page](#reload_page)
   - [/clear_cache](#clear_cache)
   - [/shutdown](#shutdown)
+  - [/download_file](#download_file)
+  - [/list_downloads](#list_downloads)
+  - [/get_file](#get_file)
+  - [/delete_file](#delete_file)
 - [Security Considerations](#security-considerations)
 - [Troubleshooting](#troubleshooting)
 - [License](#license)
@@ -22,6 +26,7 @@ This project provides a Docker container that runs a Chromium browser controlled
 ## Latest Additions
 - **Support for WebGL2**: Leverage mesa to support GPU acceleration via CPU acceleration- This can generate high cpu requirement VM will need to be sized appropriateley in this context
 - **Shutdown Endpoint**: Added a new endpoint to shutdown the docker container / shutdown
+- **File Download and Management**: Added new endpoints for downloading files, listing downloads, retrieving files, and managing downloaded content
 
 ## Features
 - **Chromium Browser Control**: Uses Playwright to download Chromium and Chrome DevTools Protocol (CDP) to manage and control the browser via WebSocket.
@@ -69,6 +74,7 @@ docker run -p 5900:5900 -p 5901:5901 -e TARGET_URL=https://www.example.com chrom
   - `SCREEN_WIDTH`: Width of the virtual screen. Defaults to `1920` if not specified.
   - `SCREEN_HEIGHT`: Height of the virtual screen. Defaults to `1080` if not specified.
   - `VNC_PASSWORD`: Password for VNC access. By default, no password is set, but it is recommended for security purposes.
+  - `DOWNLOAD_DIR`: Directory for storing downloaded files. Defaults to `/downloads` if not specified.
 
 ## API Documentation
 
@@ -121,6 +127,78 @@ docker run -p 5900:5900 -p 5901:5901 -e TARGET_URL=https://www.example.com chrom
 - Success: Returns a status `200 OK` with a message "Chromium stopped successfully. The container will exit automatically." indicating that the chrome instance has been stopped and the container will follow.
 - Failure: Returns a status `500` if there is an error stopping the process.
 
+### /download_file
+**Endpoint**: `/download_file`  
+**Method**: `POST`  
+**Description**: Initiates a file download using Chrome DevTools Protocol.
+
+**Request Headers**:
+- `Content-Type`: Must be set to `application/json`
+
+**Request Body** (JSON):
+```
+{
+  "url": "<download_url>"
+}
+```
+
+**Response**:
+- Success: Returns a status `200 OK` with a message indicating that the download has been initiated and the download directory path.
+- Failure: Returns a status `400` if no URL is provided, `404` if no open tabs are found, or `500` if there is an error communicating with Chromium.
+
+### /list_downloads
+**Endpoint**: `/list_downloads`  
+**Method**: `GET`  
+**Description**: Lists all files in the download directory with their metadata.
+
+**Response**:
+- Success: Returns a status `200 OK` with a JSON array of files containing:
+  - `name`: File name
+  - `size`: File size in bytes
+  - `modified`: Last modification timestamp
+  - `path`: Full file path
+- Failure: Returns a status `500` if there is an error accessing the download directory.
+
+### /get_file
+**Endpoint**: `/get_file`  
+**Method**: `POST`  
+**Description**: Retrieves a specific file from the download directory.
+
+**Request Headers**:
+- `Content-Type`: Must be set to `application/json`
+
+**Request Body** (JSON):
+```
+{
+  "filename": "example.pdf"
+}
+```
+
+**Response**:
+- Success: Returns the file as an attachment with appropriate headers.
+- Failure: 
+  - Returns a status `400` if no filename is provided in the request body
+  - Returns a status `404` if the file is not found
+  - Returns a status `500` if there is an error retrieving the file
+
+**Example Usage**:
+```bash
+curl -X POST http://localhost:5901/get_file \
+  -H "Content-Type: application/json" \
+  -d '{"filename": "example.pdf"}'
+```
+
+### /delete_file
+**Endpoint**: `/delete_file/<filename>`  
+**Method**: `DELETE`  
+**Description**: Deletes a specific file from the download directory.
+
+**Parameters**:
+- `filename`: The name of the file to delete (in the URL path)
+
+**Response**:
+- Success: Returns a status `200 OK` with a message indicating that the file was deleted successfully.
+- Failure: Returns a status `404` if the file is not found, or `500` if there is an error deleting the file.
 
 ## Security Considerations
 
@@ -130,22 +208,9 @@ docker run -p 5900:5900 -p 5901:5901 -e TARGET_URL=https://www.example.com chrom
 - **Logging Level**: The `chromium_api.py` script is configured to log at the debug level, which may expose sensitive information. Ensure to lower the verbosity level, particularly in production environments.
 - **Flask Server**: The Flask server included is intended for development purposes. For production, you should use a WSGI server like `gunicorn` to increase security and reliability.
 - **Non-Production Server Usage**: Replace Flask's default server with `gunicorn` or another production-ready server for shared or deployed versions.
+- **Download Directory Security**: Ensure the download directory has appropriate permissions and is properly secured, especially when running in a production environment.
 
 ## Troubleshooting
 
 1. **415 Unsupported Media Type Error**:
-   - Ensure that the `Content-Type` header in your request is set to `application/json`. This is necessary for the server to correctly interpret the request body as JSON.
-
-2. **Chromium DBus Errors**:
-   - You may see errors related to DBus (`Failed to connect to the bus`). These can generally be ignored if the browser still functions properly.
-
-## Next Steps: Moving from Playwright to Another Chromium Implementation
-
-If your use case requires more flexibility or if Playwright is not suitable for your specific needs, you may consider switching to another Chromium automation tool. Some popular alternatives include:
-
-- **Thorium Browser**: Thorium is an open-source Chromium-based browser with added enhancements for privacy and efficiency. It can serve as a replacement if you need better control or features outside of standard Chromium.
-
-Each of these tools has different strengths, and your choice will depend on your project's needs, such as language compatibility, ease of use, and community support.
-
-## License
-This project is licensed under the MIT License. See the LICENSE file for more information.
+   - Ensure that the `Content-Type`
