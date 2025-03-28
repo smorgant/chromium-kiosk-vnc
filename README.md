@@ -64,6 +64,21 @@ docker run -p 5900:5900 -p 5901:5901 -e TARGET_URL=https://www.example.com chrom
 - **Port 5900**: Used for VNC access.
 - **Port 5901**: Used for the Flask API server.
 
+To run multiple instances of the container, you can map the internal ports (5900 and 5901) to different external ports. For example:
+
+```
+# First instance
+docker run -p 5900:5900 -p 5901:5901 -e TARGET_URL=https://www.example.com --name chromium-kiosk-v1 chromium-controller
+
+# Second instance with different external ports
+docker run -p 5902:5900 -p 5903:5901 -e TARGET_URL=https://www.example.com --name chromium-kiosk-v2 chromium-controller
+```
+
+In this example:
+- The first instance uses default ports (5900/5901)
+- The second instance maps internal port 5900 to external port 5902 (VNC) and internal port 5901 to external port 5903 (API)
+- Each instance needs a unique container name (--name)
+
 ### Required and Optional Parameters for Running the Container
 
 - **Required Parameter**:
